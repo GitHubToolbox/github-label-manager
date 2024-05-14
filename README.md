@@ -47,6 +47,10 @@ Keeping all your labels consistent makes it easier to work across multiple repos
 We currently manage over 100 repositories across more than 15 organisations so it is important to reduce
 any friction when moving between project.
 
+To get you started we have also included a copy of the config that we use for all of the repositories we manage,
+you can find that in the [config](config) directory. In there you will find a copy of the labels in both
+[JSON](config/labels.json) and [YAML](config/labels.yml) format.
+
 ## Command Line Usage
 
 ```shell
