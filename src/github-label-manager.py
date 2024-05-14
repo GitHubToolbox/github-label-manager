@@ -1,7 +1,35 @@
 #!/usr/bin/env python
 
 """
-Description to go here.
+This script is designed to allow you to manage the labels on your GitHub repositories.
+
+Keeping all your labels consistent makes it easier to work across multiple repositories (and organisations)
+
+usage: github-label-manager [-h] [-d] [-v] [-j | -y] [-t TOKEN] -f FILENAME [-u USER | -o ORG | -r REPO]
+
+Setup labels on git repository.
+
+flags:
+  -h, --help            show this help message and exit.
+  -d, --dry-run         Perform a dry run (default: False)
+  -v, --validate        Validate local labels (default: False)
+
+mutually exclusive flags:
+  -j, --json            JSON formatted config file (default: True)
+  -y, --yaml            YAML formatted config file (default: False)
+
+selective:
+  -t TOKEN, --token TOKEN
+                        GitHub token (needed for everything except -v/--validate) (default: None)
+
+required:
+  -f FILENAME, --filename FILENAME
+                        File containing labels (default: None)
+
+mutually exclusive:
+  -u USER, --user USER  Specify username (default: None)
+  -o ORG, --org ORG     Specify organization (default: None)
+  -r REPO, --repo REPO  Specify repository (default: None)
 """
 
 import argparse
@@ -10,7 +38,7 @@ import random
 import re
 import sys
 
-from typing import Any, Literal, NoReturn
+from typing import Any, Literal
 
 import colorama
 import yaml
@@ -39,7 +67,7 @@ RESET: str = colorama.Style.RESET_ALL
 
 def success(message: str) -> None:
     """
-    Function to print success messages.
+    Display a success messages to the user.
 
     Arguments:
         message (str): The message to display.
@@ -49,7 +77,7 @@ def success(message: str) -> None:
 
 def warn(message: str) -> None:
     """
-    Function to print warning messages.
+    Display a warning messages to the user.
 
     Arguments:
         message (str): The message to display.
@@ -59,7 +87,7 @@ def warn(message: str) -> None:
 
 def error(message: str) -> None:
     """
-    Function to print error messages.
+    Display an error messages to the user.
 
     Arguments:
         message (str): The message to display.
@@ -69,7 +97,7 @@ def error(message: str) -> None:
 
 def info(message: str) -> None:
     """
-    Function to print informational messages.
+    Display an informational messages to the user.
 
     Arguments:
         message (str): The message to display.
@@ -79,7 +107,7 @@ def info(message: str) -> None:
 
 def parser_error(message: str) -> None:
     """
-    Function to print parser error messages.
+    Display a parser error messages to the user.
 
     Arguments:
         message (str): The message to display.
@@ -402,6 +430,39 @@ def setup_client(token) -> Github:
         sys.exit()
 
 
+def update_selected_repos(args: argparse.Namespace, local_labels: list) -> None:
+    """
+    _summary_.
+
+    Arguments:
+        args (argparse.Namespace): The command line arguments.
+        local_labels (list): THe list of labels loaded from the config file.
+    """
+    client: Github = setup_client(args.token)
+
+    if args.user:
+        try:
+            user: NamedUser | AuthenticatedUser = client.get_user(args.user)
+            user_repos: PaginatedList[Repository] = user.get_repos(sort='full_name')
+
+            for repo in user_repos:
+                process_labels(client, repo.full_name, local_labels, args.dry_run)
+        except GithubException as err:
+            error(f"Failed to process user {user.login}: {err}")
+    elif args.repo:
+        process_labels(client, args.repo, local_labels, args.dry_run)
+    elif args.org:
+        try:
+            org: Organization = client.get_organization(args.org)
+            org_repos: PaginatedList[Repository] = org.get_repos(sort='full_name')
+            for repo in org_repos:
+                process_labels(client, repo.full_name, local_labels, args.dry_run)
+        except GithubException as err:
+            error(f"Failed to process organization {args.org}: {err}")
+    else:
+        error("Invalid repository or organization specified.")
+
+
 def setup_arg_parser() -> argparse.ArgumentParser:
     """
     _summary_.
@@ -475,32 +536,10 @@ def process_arguments() -> None:
         parser_error("the following arguments are required: -t/--token")
         sys.exit(1)
 
-    client: Github = setup_client(args.token)
-
-    if args.user:
-        try:
-            user: NamedUser | AuthenticatedUser = client.get_user(args.user)
-            repos: PaginatedList[Repository] = user.get_repos(sort='full_name')
-
-            for repo in repos:
-                process_labels(client, repo.full_name, local_labels, args.dry_run)
-        except GithubException as err:
-            error(f"Failed to process user {user.login}: {err}")
-    elif args.repo:
-        process_labels(client, args.repo, local_labels, args.dry_run)
-    elif args.org:
-        try:
-            org: Organization = client.get_organization(args.org)
-            repos: PaginatedList[Repository] = org.get_repos(sort='full_name')
-            for repo in repos:
-                process_labels(client, repo.full_name, local_labels, args.dry_run)
-        except GithubException as err:
-            error(f"Failed to process organization {args.org}: {err}")
-    else:
-        error("Invalid repository or organization specified.")
+    update_selected_repos(args, local_labels)
 
 
-def main() -> NoReturn:
+def main() -> None:
     """
     _summary_.
 
