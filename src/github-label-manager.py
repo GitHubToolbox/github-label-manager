@@ -60,7 +60,6 @@ SUCCESS: str = colorama.Fore.GREEN
 WARN: str = colorama.Fore.YELLOW
 ERROR: str = colorama.Fore.RED
 INFO: str = colorama.Fore.CYAN
-SYSTEM: str = colorama.Fore.LIGHTBLACK_EX
 BOLD: str = colorama.Style.BRIGHT
 RESET: str = colorama.Style.RESET_ALL
 
