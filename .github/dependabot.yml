@@ -1,4 +1,4 @@
-weeklyversion: 2
+version: 2
 
 updates:
   - package-ecosystem: "github-actions"
@@ -7,7 +7,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "04:00"
-      timezone: "UTC"
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore:"
@@ -23,7 +22,6 @@ updates:
       interval: "weekly"
       time: "04:00"
       day: "monday"
-      timezone: "UTC"
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore:"
