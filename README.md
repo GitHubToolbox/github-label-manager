@@ -40,12 +40,13 @@
 
 ## Overview
 
-This script is designed to allow you to manage the labels on your GitHub repositories.
+This script is designed to allow you to manage the labels on your GitHub repositories. Labels are used
+to categorize issues, pull requests, and discussions.
 
 Keeping all your labels consistent makes it easier to work across multiple repositories (and organisations)
 
 We currently manage over 100 repositories across more than 15 organisations so it is important to reduce
-any friction when moving between project.
+any friction when moving between project to deal with issues pr pull requests.
 
 To get you started we have also included a copy of the config that we use for all of the repositories we manage,
 you can find that in the [config](config) directory. In there you will find a copy of the labels in both
