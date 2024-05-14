@@ -1,0 +1,13 @@
+[MESSAGES CONTROL]
+disable=unknown-option-value,
+        global-statement,
+        invalid-name,
+        line-too-long,
+        unnecessary-pass,
+        broad-exception-caught,
+        broad-exception-raised,
+# Version 3.9.*
+        broad-except,
+        unsupported-binary-operation,
+# Version 3.8.*
+        unsubscriptable-object

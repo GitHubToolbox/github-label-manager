@@ -1,0 +1,162 @@
+[
+  {
+    "name": "dependabot: dependencies",
+    "color": "2B67C6",
+    "description": null
+  },
+  {
+    "name": "dependabot: ecosystem : github actions",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: ecosystem : python",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: ecosystem : ruby",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: ecosystem : docker",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: manual approve",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: manual merge",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: auto approve",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "dependabot: auto merge",
+    "color": "2B67C6",
+    "description": ""
+  },
+  {
+    "name": "impact: high",
+    "color": "B60205",
+    "description": ""
+  },
+  {
+    "name": "impact: medium",
+    "color": "D93F0B",
+    "description": ""
+  },
+  {
+    "name": "impact: low",
+    "color": "FBCA04",
+    "description": ""
+  },
+  {
+    "name": "impact: none",
+    "color": "0E8A16",
+    "description": ""
+  },
+  {
+    "name": "resolution: released",
+    "color": "7057FF",
+    "description": ""
+  },
+  {
+    "name": "resolution: won't fix",
+    "color": "7057FF",
+    "description": ""
+  },
+  {
+    "name": "resolution: can't replicate",
+    "color": "7057FF",
+    "description": ""
+  },
+  {
+    "name": "resolution: closed",
+    "color": "7057FF",
+    "description": ""
+  },
+  {
+    "name": "state: triage",
+    "color": "006B75",
+    "description": ""
+  },
+  {
+    "name": "state: stale",
+    "color": "818589",
+    "description": ""
+  },
+  {
+    "name": "state: keep",
+    "color": "EE33EE",
+    "description": ""
+  },
+  {
+    "name": "state: blocked",
+    "color": "B60205",
+    "description": ""
+  },
+  {
+    "name": "state: accepted",
+    "color": "0075CA",
+    "description": ""
+  },
+  {
+    "name": "state: confirmed",
+    "color": "0075CA",
+    "description": ""
+  },
+  {
+    "name": "state: in progress",
+    "color": "0075CA",
+    "description": ""
+  },
+  {
+    "name": "state: complete",
+    "color": "0075CA",
+    "description": ""
+  },
+  {
+    "name": "state: rejected",
+    "color": "B60205",
+    "description": ""
+  },
+  {
+    "name": "type: question",
+    "color": "FFFFFF",
+    "description": ""
+  },
+  {
+    "name": "type: bug",
+    "color": "FFFFFF",
+    "description": ""
+  },
+  {
+    "name": "type: feature",
+    "color": "FFFFFF",
+    "description": ""
+  },
+  {
+    "name": "type: security",
+    "color": "FFFFFF",
+    "description": ""
+  },
+  {
+    "name": "type: maintenance",
+    "color": "FFFFFF",
+    "description": ""
+  },
+  {
+    "name": "type: enhancement",
+    "color": "FFFFFF",
+    "description": ""
+  }
+]

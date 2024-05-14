@@ -1,0 +1,97 @@
+name: Repository Validation
+
+# Triggers for the workflow include any push event that does not affect branches prefixed with 'dependabot/'
+# and any pull request to any branch in the repository.
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - '**/*.md'
+  
+# Manage concurrency to prevent multiple instances of the workflow from running simultaneously on the same branch.
+# If a new run starts, it cancels any currently running instance.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Set default permissions to read-only to enhance security.
+permissions: read-all
+
+jobs:
+  get-go-version:
+    name: Get Latest Go Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-language-versions.outputs.latest-versions }}
+    steps:
+      - uses: ActionsToolbox/get-language-versions-action@9a98a01e87286f073bbee069547aeeea4ea30265 # v0.1.2
+        id: get-language-versions
+        with:
+          language: "go"
+          highest-only: true
+          remove-patch-version: true
+
+  get-python-version:
+    name: Get Latest Python Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-language-versions.outputs.latest-versions }}
+    steps:
+      - uses: ActionsToolbox/get-language-versions-action@9a98a01e87286f073bbee069547aeeea4ea30265 # v0.1.2
+        id: get-language-versions
+        with:
+          language: "python"
+          highest-only: true
+          remove-patch-version: true
+
+  action-lint:
+    name: Action Lint
+    needs: get-go-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Setup Go ${{ needs.get-go-version.outputs.version }}
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version: ${{ needs.get-go-version.outputs.version }}
+      - name: Run Action Lint
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/action-lint/master/pipeline.sh)
+
+  yaml-lint:
+    name: YAML Lint
+    needs: get-python-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Set up Python ${{ needs.get-python-version.outputs.version }}
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+        with:
+          python-version: ${{ needs.get-python-version.outputs.version }}
+      - name: Run YAML-Lint
+        env:
+          EXCLUDE_FILES: ".github/workflows"
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/yaml-lint/master/pipeline.sh)
+
+  #
+  # You might ask yourself 'why are we using a wrapper function?' it is to make the branch protection rules easier to manage.
+  #
+  repository-validation-pipeline:
+    if: always()  # This ensures the job runs regardless of the results of previous jobs.
+    name: Repository Validation Pipeline
+    needs:
+      - action-lint
+      - yaml-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Check Job Statuses
+        run: .github/scripts/check-jobs.sh '${{ toJson(needs) }}'

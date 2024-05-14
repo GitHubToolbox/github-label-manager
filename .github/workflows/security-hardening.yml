@@ -1,0 +1,36 @@
+name: Security Hardening
+
+# Define triggers for the workflow; it ignores pushes to branches prefixed with 'dependabot/'
+# and responds to pull requests targeting any branch in the repository.
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - '**/*.md'
+
+# Manage concurrency to ensure that only one instance of this workflow runs at a time per branch/ref,
+# cancelling any in-progress instances when a new one starts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Declare default permissions as read-only to enhance security.
+permissions: read-all
+
+jobs:
+  security-hardening:
+    name: Harden Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        # Use a specific SHA to checkout the code, ensuring the action is secure and hasn't been tampered with.
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Ensure SHA pinned actions
+        # Utilize a community GitHub Action to verify all used actions are pinned to a SHA for enhanced security.
+        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@40e45e738b3cad2729f599d8afc6ed02184e1dbd # v3.0.5

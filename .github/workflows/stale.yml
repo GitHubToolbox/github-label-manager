@@ -1,0 +1,63 @@
+name: Stale issue/pr handler
+
+# Schedule the workflow to run at 2:01 AM UTC daily.
+on:
+  schedule:
+    - cron: '6 2 * * *'
+
+# Set default permissions to read-only to enhance security.
+permissions: read-all
+
+jobs:
+  stale:
+    name: Handle stale Issues & PRs
+    # Specify write permissions for contents, issues, and pull requests
+    # to enable the action to modify issue and PR states.
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Handle state Issues & PRs
+        # Use the stale action at a specific commit SHA to mark and close stale issues and PRs.
+        # The specified commit ensures reliability and security by using a known good version.
+        uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # v9.0.0
+        id: stale-issues
+        with:
+          # Define messages and labels for stale and closed issues.
+          stale-issue-message: 'This issue is stale because it has been open 30 days with no activity. Remove stale label or comment or this will be closed in 5 days.'
+          close-issue-message: 'This issue was closed because it has been stalled for 5 days with no activity.'
+          days-before-issue-stale: 30
+          days-before-issue-close: 5
+          stale-issue-label: 'state: stale'
+          close-issue-label: 'resolution: closed'
+          exempt-issue-labels: 'state: blocked,state: keep'
+          # Define messages and labels for stale and closed pull requests.
+          stale-pr-message: 'This PR is stale because it has been open 45 days with no activity. Remove stale label or comment or this will be closed in 10 days.'
+          close-pr-message: 'This PR was closed because it has been stalled for 10 days with no activity.'
+          days-before-pr-stale: 45
+          days-before-pr-close: 10
+          stale-pr-label: 'state: stale'
+          close-pr-label: 'resolution: closed'
+          exempt-pr-labels: 'state: blocked,state: keep'
+
+  slack-workflow-status:
+    # This job always runs regardless of the previous job's result.
+    if: always()
+    name: Slack Post Workflow Notification
+    # Define a dependency on the purge-obsolete-workflows job.
+    needs:
+      - stale
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notifications
+        # Only send Slack notifications for scheduled runs (not manual triggers).
+        if: ${{ github.event_name == 'schedule' && needs.stale.result != 'success'}}
+        # Use a specific version (via commit SHA) of a community action to send Slack notifications.
+        uses: Gamesight/slack-workflow-status@68bf00d0dbdbcb206c278399aa1ef6c14f74347a # v1.3.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          include_jobs: on-failure
+          include_commit_message: true

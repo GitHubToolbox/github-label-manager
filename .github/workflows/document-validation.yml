@@ -1,0 +1,99 @@
+name: Documentation Validation
+
+# Triggers for the workflow include any push event that does not affect branches prefixed with 'dependabot/'
+# and any pull request to any branch in the repository.
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths:
+      - '**/*.md'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - '**/*.md'
+  
+# Manage concurrency to prevent multiple instances of the workflow from running simultaneously on the same branch.
+# If a new run starts, it cancels any currently running instance.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Set default permissions to read-only to enhance security.
+permissions: read-all
+
+jobs:
+  get-node-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-language-versions.outputs.latest-versions }}
+    steps:
+      - uses: ActionsToolbox/get-language-versions-action@9a98a01e87286f073bbee069547aeeea4ea30265 # v0.1.2
+        id: get-language-versions
+        with:
+          language: "node"
+          highest-only: true
+          remove-patch-version: true
+
+  get-ruby-version:
+    name: Get Ruby Versions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-language-versions.outputs.latest-versions }}
+    steps:
+    - uses: ActionsToolbox/get-language-versions-action@9a98a01e87286f073bbee069547aeeea4ea30265 # v0.1.2
+      id: get-language-versions
+      with:
+        language: "ruby"
+        highest-only: true
+        remove-patch-version: true
+
+  awesomebot:
+    name: Awesomebot
+    needs: get-ruby-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Set up Ruby ${{ needs.get-ruby-version.outputs.version }}
+        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1.176.0
+        with:
+          ruby-version: ${{ needs.get-ruby-version.outputs.version }}
+      - name: Run Awesomebot
+        env:
+          FLAGS: "default"
+          WHITELIST: "https://img.shields.io"
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/awesomebot/master/pipeline.sh)
+
+  markdown-lint:
+    name: Markdown Lint
+    needs: get-node-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Setup node ${{ needs.get-node-version.outputs.version }}
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: ${{ needs.get-node-version.outputs.version }}
+      - name: Run Markdown Lint
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/markdown-lint/master/pipeline.sh)
+        env:
+          EXCLUDE_FILES: "README.md"
+
+  #
+  # You might ask yourself 'why are we using a wrapper function?' it is to make the branch protection rules easier to manage.
+  #
+  repository-validation-pipeline:
+    if: always()  # This ensures the job runs regardless of the results of previous jobs.
+    name: Documentation Validation Pipeline
+    needs:
+      - awesomebot
+      - markdown-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Check Job Statuses
+        run: .github/scripts/check-jobs.sh '${{ toJson(needs) }}'

@@ -1,0 +1,55 @@
+name: Purge deprecated workflow runs
+
+# Trigger conditions: manually via workflow_dispatch and automatically every Monday at 4:13 AM UTC.
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '30 5 * * 1'
+
+# Manage concurrency to ensure that only one instance of this workflow runs at a time per branch/ref,
+# cancelling any in-progress instances.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Set default permissions for the workflow; restricts all actions to read-only unless specified otherwise.
+permissions: read-all
+
+jobs:
+  purge-obsolete-workflows:
+    name: Purge deprecated workflow runs
+    # Grant specific permission to perform actions on workflow runs.
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge obsolete workflow runs
+        # Use a specific version (via commit SHA) of a community action to purge deprecated workflow runs.
+        uses: otto-de/purge-deprecated-workflow-runs@31a4e821d43e9a354cbd65845922c76e4b4b3633 # v 2.0.4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          remove-obsolete: true
+          remove-cancelled: true
+          remove-failed: true
+          remove-skipped: true
+
+  slack-workflow-status:
+    # This job always runs regardless of the previous job's result.
+    if: always()
+    name: Slack Post Workflow Notification
+    # Define a dependency on the purge-obsolete-workflows job.
+    needs:
+      - purge-obsolete-workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notifications
+        # Only send Slack notifications for scheduled runs (not manual triggers).
+        if: ${{ github.event_name == 'schedule' && needs.purge-obsolete-workflows.result != 'success'}}
+        # Use a specific version (via commit SHA) of a community action to send Slack notifications.
+        uses: Gamesight/slack-workflow-status@68bf00d0dbdbcb206c278399aa1ef6c14f74347a # v1.3.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          include_jobs: on-failure
+          include_commit_message: true

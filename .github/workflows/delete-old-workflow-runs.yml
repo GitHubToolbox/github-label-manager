@@ -1,0 +1,79 @@
+name: Delete old workflow runs
+
+# This workflow can be triggered manually with specified inputs or automatically every Monday at 4:13 AM UTC.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days to retain workflow runs.'
+        required: true
+        default: '30'
+      minimum-runs:
+        description: 'The minimum number of runs to keep for each workflow.'
+        required: true
+        default: '6'
+
+  schedule:
+    - cron: '30 3 * * *'
+
+# Manage concurrent execution, cancelling any in-progress instances when a new instance starts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Set environment variables used as fallback values if manual inputs are not provided.
+env:
+  DAYS: 30
+  MINIMUM_RUNS: 6
+
+# Set default permissions to read-only, will be overridden in specific jobs.
+permissions: read-all
+
+jobs:
+  set-output-defaults:
+    name: Set Output Defaults
+    runs-on: ubuntu-latest
+    outputs:
+      days: ${{ steps.set-output-defaults.outputs.days }}
+      minimum-runs: ${{ steps.set-output-defaults.outputs.minimum-runs }}
+    steps:
+      - name: set outputs with default values
+        id: set-output-defaults
+        run: |
+          # Set outputs based on workflow input or environment variables.
+          echo "days=${{ github.event.inputs.days || env.DAYS }}" >> "${GITHUB_OUTPUT}"
+          echo "minimum-runs=${{ github.event.inputs.minimum-runs || env.MINIMUM_RUNS }}" >> "${GITHUB_OUTPUT}"
+
+  delete-old-workflows:
+    name: Delete old workflow runs
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    needs:
+      - set-output-defaults
+    steps:
+      - name: Delete workflow runs
+        # Use specific commit SHA of action to ensure consistent behaviour across executions.
+        uses: Mattraks/delete-workflow-runs@39f0bbed25d76b34de5594dceab824811479e5de # v2.0.6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: ${{ needs.set-output-defaults.outputs.days }}
+          keep_minimum_runs: ${{ needs.set-output-defaults.outputs.minimum-runs }}
+
+  slack-workflow-status:
+    if: always()
+    name: Slack Post Workflow Notification
+    needs:
+      - delete-old-workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notifications
+        # Execute this step only for scheduled events which fail to avoid sending unnecessary notifications.
+        if: ${{ github.event_name == 'schedule' && needs.delete-old-workflows.result != 'success'}}
+        uses: Gamesight/slack-workflow-status@68bf00d0dbdbcb206c278399aa1ef6c14f74347a # v1.3.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          include_jobs: on-failure
+          include_commit_message: true

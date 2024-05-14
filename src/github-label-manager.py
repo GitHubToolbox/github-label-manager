@@ -1,0 +1,513 @@
+#!/usr/bin/env python
+
+"""
+Description to go here.
+"""
+
+import argparse
+import json
+import random
+import re
+import sys
+
+from typing import Any, Literal, NoReturn
+
+import colorama
+import yaml
+
+from github import Github, GithubException
+from github.AuthenticatedUser import AuthenticatedUser
+from github.NamedUser import NamedUser
+from github.Organization import Organization
+from github.PaginatedList import PaginatedList
+from github.Repository import Repository
+
+from yaspin import yaspin  # pylint: disable=import-error
+
+# Initialize Colorama
+colorama.init(autoreset=True)
+
+# Constants
+SUCCESS: str = colorama.Fore.GREEN
+WARN: str = colorama.Fore.YELLOW
+ERROR: str = colorama.Fore.RED
+INFO: str = colorama.Fore.CYAN
+SYSTEM: str = colorama.Fore.LIGHTBLACK_EX
+BOLD: str = colorama.Style.BRIGHT
+RESET: str = colorama.Style.RESET_ALL
+
+
+def success(message: str) -> None:
+    """
+    Function to print success messages.
+
+    Arguments:
+        message (str): The message to display.
+    """
+    print(f'[ {BOLD}{SUCCESS}Success{RESET} ] {message}')
+
+
+def warn(message: str) -> None:
+    """
+    Function to print warning messages.
+
+    Arguments:
+        message (str): The message to display.
+    """
+    print(f'[ {BOLD}{WARN}Warning{RESET} ] {message}')
+
+
+def error(message: str) -> None:
+    """
+    Function to print error messages.
+
+    Arguments:
+        message (str): The message to display.
+    """
+    print(f'[ {BOLD}{ERROR}Error{RESET} ] {message}')
+
+
+def info(message: str) -> None:
+    """
+    Function to print informational messages.
+
+    Arguments:
+        message (str): The message to display.
+    """
+    print(f'[ {BOLD}{INFO}Info{RESET} ] {message}')
+
+
+def parser_error(message: str) -> None:
+    """
+    Function to print parser error messages.
+
+    Arguments:
+        message (str): The message to display.
+    """
+    print(f'github-label-manager: error: {message}')
+
+
+def plural(number: int) -> Literal[''] | Literal['s']:
+    """
+    Pluralise a string based on a given number.
+
+    Arguments:
+        number (int): The number to pluralise.
+
+    Returns:
+        Literal[''] | Literal['s']: '' or s depending on the value of number.
+    """
+    return '' if number == 1 else 's'
+
+
+def add_new_labels(client: Github, repo: str, labels_to_add: list, dry_run: bool) -> None:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        client (_type_): _description_
+        repo (_type_): _description_
+        labels_to_add (_type_): _description_
+        dry_run (_type_): _description_
+    """
+    print(f"Adding {len(labels_to_add)} new label{plural(len(labels_to_add))}")
+    for label in labels_to_add:
+        with yaspin(text=f"\tAdding '{label['name']}' ...", color="cyan") as spinner:
+            if not dry_run:
+                try:
+                    client.get_repo(repo).create_label(name=label['name'], color=label['color'], description=label['description'])
+                    spinner.ok("Done!")
+                except GithubException as e:
+                    spinner.fail(f"Failed! {e}")
+                    error(f"Error creating label '{label['name']}': {e}")
+            else:
+                spinner.ok("Dry run!")
+
+
+def delete_obsolete_labels(client: Github, repo: str, labels_to_delete: list, dry_run: bool) -> None:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        client (_type_): _description_
+        repo (_type_): _description_
+        labels_to_delete (_type_): _description_
+        dry_run (_type_): _description_
+    """
+    print(f"Deleting {len(labels_to_delete)} label{plural(len(labels_to_delete))}")
+    for label in labels_to_delete:
+        with yaspin(text=f"\tDeleting '{label['name']}' ...", color="cyan") as spinner:
+            if not dry_run:
+                try:
+                    client.get_repo(repo).get_label(label['name']).delete()
+                    spinner.ok("Done!")
+                except GithubException as e:
+                    spinner.fail(f"Failed! {e}")
+                    error(f"Error deleting label '{label['name']}': {e}")
+            else:
+                spinner.ok("Dry run!")
+
+
+def update_labels(client: Github, repo: str, labels_to_update: list, dry_run: bool) -> None:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        client (_type_): _description_
+        repo (_type_): _description_
+        labels_to_update (_type_): _description_
+        dry_run (_type_): _description_
+    """
+    print(f"Updating {len(labels_to_update)} label{plural(len(labels_to_update))}")
+    for label in labels_to_update:
+        with yaspin(text=f"\tUpdating '{label['name']}' ...", color="cyan") as spinner:
+            if not dry_run:
+                try:
+                    client.get_repo(repo).get_label(label['name']).edit(name=label['name'], color=label['color'], description=label['description'])
+                    spinner.ok("Done!")
+                except GithubException as e:
+                    spinner.fail(f"Failed! {e}")
+                    error(f"Error updating label '{label['name']}': {e}")
+            else:
+                spinner.ok("Dry run!")
+
+
+def process_repo_labels(local_labels: list, repo_labels: list) -> tuple[list, list, list]:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        local_labels (_type_): _description_
+        repo_labels (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    labels_to_update: list = []
+    update_keys = set()
+
+    local_diff: list = [label for label in local_labels if label not in repo_labels]
+    remote_diff: list = [label for label in repo_labels if label not in local_labels]
+
+    for local in local_diff:
+        for remote in remote_diff:
+            if local['name'].lower() == remote['name'].lower():
+                labels_to_update.append(local)
+                update_keys.add(local['name'].lower())
+
+    labels_to_add: list = [label for label in local_diff if label['name'].lower() not in update_keys]
+    labels_to_delete: list = [label for label in remote_diff if label['name'].lower() not in update_keys]
+
+    return labels_to_add, labels_to_delete, labels_to_update
+
+
+def get_repo_labels(client: Github, repo: str) -> list[dict[str, Any]] | list:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        client (_type_): _description_
+        repo (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    try:
+        labels: Any = client.get_repo(repo).get_labels()
+        return [
+            {'name': label.name, 'color': label.color.upper(), 'description': label.description}
+            for label in labels
+        ]
+    except GithubException as err:
+        error(f"Failed to retrieve labels from {repo}: {err}")
+        return []
+
+
+def process_labels(client: Github, repo: str, local_labels: list, dry_run: bool) -> None:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        client (_type_): _description_
+        repo (_type_): _description_
+        local_labels (_type_): _description_
+        dry_run (_type_): _description_
+    """
+    labels_to_add: list = []
+    labels_to_delete: list = []
+    labels_to_update: list = []
+
+    try:
+        info(f"Processing Labels for {repo}:")
+        repo_labels: list[dict[str, Any]] | list = get_repo_labels(client, repo)
+
+        labels_to_add, labels_to_delete, labels_to_update = process_repo_labels(local_labels, repo_labels)
+
+        add_new_labels(client, repo, labels_to_add, dry_run)
+        delete_obsolete_labels(client, repo, labels_to_delete, dry_run)
+        update_labels(client, repo, labels_to_update, dry_run)
+    except GithubException as err:
+        error(f"Error processing labels for {repo}: {err}")
+
+
+def validate_local_labels(labels) -> None:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        labels (_type_): _description_
+    """
+    info(f"Validating {len(labels)} Labels")
+    for label in labels:
+        print(f"Validating label '{label['name']}'")
+        if re.match(r"^[A-F0-9]{3,6}$", label['color'], re.IGNORECASE):
+            success(f"\tColor '{label['color']}' is valid")
+        else:
+            error(f"\tColor '{label['color']}' is invalid")
+
+        if label['description'] is None or len(label['description']) <= 100:
+            success("\tDescription is valid")
+        elif len(label['description']) > 100:
+            error(f"\tDescription is too long {len(label['description'])} characters (max 100)")
+        else:
+            error("\tDescription is invalid")
+
+
+def generate_random_color() -> str:
+    """
+    Generate a random HTML valid hex color code using f-string for formatting.
+
+    Returns:
+        str: A string representing a valid hex color code.
+    """
+    # Generate a random integer between 0 and 0xFFFFFF (inclusive)
+    # and format it as a hexadecimal string using f-string formatting.
+    return f"#{random.randint(0, 0xFFFFFF):06x}"  # nosec B311
+
+
+def load_labels_from_json_file(filename: str) -> list:
+    """
+    Load labels from a JSON file and normalize their properties.
+
+    This function reads a list of labels from a specified JSON file.
+
+    Arguments:
+        filename (str): Path to the JSON file containing label data.
+
+    Returns:
+        list: A list of label dictionaries with normalized properties.
+    """
+    try:
+        with open(filename, 'r', encoding='UTF-8') as file:
+            labels: Any = json.load(file)
+        return labels
+    except json.JSONDecodeError:
+        print("Parse Error in JSON file.")
+        sys.exit(1)
+    except IOError:
+        print("File not found or inaccessible.")
+        sys.exit(1)
+
+
+def load_labels_from_yaml_file(filename: str) -> list:
+    """
+    Load labels from a YAML file and normalize their properties.
+
+    This function reads a list of labels from a specified YAML file and converts the result into JSON.
+
+    Arguments:
+        filename (str): Path to the JSON file containing label data.
+
+    Returns:
+        list: A list of label dictionaries with normalized properties.
+    """
+    try:
+        with open(filename, 'r', encoding='UTF-8') as file:
+            yaml_data: Any = yaml.safe_load(file)
+            json_str: str = json.dumps(yaml_data)
+        return json.loads(json_str)
+    except yaml.YAMLError:
+        print("Parse Error in YAML file.")
+        sys.exit(1)
+    except IOError:
+        print("File not found or inaccessible.")
+        sys.exit(1)
+
+
+def load_labels_from_file(filename: str, args: argparse.Namespace) -> list:
+    """
+    Load labels from a specified file and normalize their properties.
+
+    This function reads a list of labels from a specified file. It removes any labels without a 'name',
+    sets 'description' to an empty string if it's missing or None, and assigns a random color if 'color' is missing.
+
+    Arguments:
+        filename (str): Path to the JSON file containing label data.
+
+    Returns:
+        list: A list of label dictionaries with normalized properties.
+    """
+    if args.json:
+        labels: list = load_labels_from_json_file(filename)
+    else:
+        labels = load_labels_from_yaml_file(filename)
+
+    # Process labels, filtering out invalid entries and normalizing data
+    valid_labels: list = []
+
+    for label in labels:
+        if 'name' not in label or not label['name']:
+            print("Warning: A label without a valid name was found and removed.")
+            continue
+        label['description'] = '' if 'description' not in label or label['description'] is None else label['description']
+        label['color'] = generate_random_color() if 'color' not in label or not label['color'] else label['color']
+        valid_labels.append(label)
+
+    # Sort labels by name
+    valid_labels.sort(key=lambda label: label['name'].lower())
+    return valid_labels
+
+
+def setup_client(token) -> Github:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Arguments:
+        token (_type_): _description_
+
+    Returns:
+        Github: _description_
+    """
+    try:
+        client = Github(token)
+        return client
+    except GithubException:
+        print("Invalid token")
+        sys.exit()
+
+
+def setup_arg_parser() -> argparse.ArgumentParser:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Returns:
+        argparse.ArgumentParser: _description_
+    """
+    parser = argparse.ArgumentParser(prog="github-label-manager",
+                                     description="Setup labels on git repository.",
+                                     add_help=False,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    flags: argparse._ArgumentGroup = parser.add_argument_group('flags')
+    flags_mex: argparse._ArgumentGroup = parser.add_argument_group('mutually exclusive flags')
+    flags_mex_group: argparse._MutuallyExclusiveGroup = flags_mex.add_mutually_exclusive_group()
+    selective: argparse._ArgumentGroup = parser.add_argument_group('selective')
+    required: argparse._ArgumentGroup = parser.add_argument_group('required')
+    required_mex: argparse._ArgumentGroup = parser.add_argument_group('mutually exclusive')
+    required_mex_group: argparse._MutuallyExclusiveGroup = required_mex.add_mutually_exclusive_group()
+
+    # Command line flags
+    flags.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help="show this help message and exit.")
+    flags.add_argument('-d', '--dry-run', action='store_true', help='Perform a dry run')
+    flags.add_argument('-v', '--validate', action='store_true', help='Validate local labels')
+
+    # Mutually exclusive flags
+    flags_mex_group.add_argument('-j', '--json', action='store_true', default=True, help='JSON formatted config file')
+    flags_mex_group.add_argument('-y', '--yaml', action='store_true', help='YAML formatted config file')
+
+    # Optional arguments
+    selective.add_argument('-t', '--token', type=str, help='GitHub token (needed for everything except -v/--validate)')
+
+    # Required arguments
+    required.add_argument('-f', '--filename', type=str, required=True, help='File containing labels')
+
+    required_mex_group.add_argument('-u', '--user', type=str, help='Specify username')
+    required_mex_group.add_argument('-o', '--org', type=str, help='Specify organization')
+    required_mex_group.add_argument('-r', '--repo', type=str, help='Specify repository')
+
+    return parser
+
+
+def process_arguments() -> None:
+    """
+    _summary_.
+
+    _extended_summary_
+
+    Returns:
+        argparse.Namespace: _description_
+    """
+    parser: argparse.ArgumentParser = setup_arg_parser()
+    args: argparse.Namespace = parser.parse_args()
+
+    if args.yaml:
+        args.json = False
+
+    local_labels: Any = load_labels_from_file(args.filename, args)
+
+    if args.validate:
+        validate_local_labels(local_labels)
+        sys.exit(0)
+
+    if not args.repo and not args.org and not args.user:
+        parser_error("one of the arguments -u/--user -o/--org -r/--repo is required")
+        sys.exit(0)
+
+    if not args.token:
+        parser_error("the following arguments are required: -t/--token")
+        sys.exit(1)
+
+    client: Github = setup_client(args.token)
+
+    if args.user:
+        try:
+            user: NamedUser | AuthenticatedUser = client.get_user(args.user)
+            repos: PaginatedList[Repository] = user.get_repos(sort='full_name')
+
+            for repo in repos:
+                process_labels(client, repo.full_name, local_labels, args.dry_run)
+        except GithubException as err:
+            error(f"Failed to process user {user.login}: {err}")
+    elif args.repo:
+        process_labels(client, args.repo, local_labels, args.dry_run)
+    elif args.org:
+        try:
+            org: Organization = client.get_organization(args.org)
+            repos: PaginatedList[Repository] = org.get_repos(sort='full_name')
+            for repo in repos:
+                process_labels(client, repo.full_name, local_labels, args.dry_run)
+        except GithubException as err:
+            error(f"Failed to process organization {args.org}: {err}")
+    else:
+        error("Invalid repository or organization specified.")
+
+
+def main() -> NoReturn:
+    """
+    _summary_.
+
+    _extended_summary_
+    """
+    process_arguments()
+
+
+if __name__ == "__main__":
+    main()

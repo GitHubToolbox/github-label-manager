@@ -1,0 +1,27 @@
+name: Greetings
+
+# Trigger this workflow on pull request events and issue events.
+on: 
+  pull_request:
+  issues:
+
+# Set default permissions to read-only to limit potential security risks.
+permissions: read-all
+
+jobs:
+  greetings:
+    name: Handle Greetings
+    # Override default read-only permissions to allow modifications to issues and pull requests.
+    permissions:
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Handle greetings
+        # Use the first-interaction action to automate greeting messages. 
+        # A specific commit SHA is referenced to ensure stability and security of the action used.
+        uses: actions/first-interaction@34f15e814fe48ac9312ccf29db4e74fa767cbab7 # v1.3.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: "Thank you for raising your first issue - all contributions to this project are welcome!"
+          pr-message: "Thank you for raising your first pull request - all contributions to this project are welcome!"
