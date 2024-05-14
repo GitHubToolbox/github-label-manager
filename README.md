@@ -110,7 +110,7 @@ You can add a -d/--dry-run to any of the 3 examples above and it will show you t
 
 ## Personal Access Tokens (PAT)
 
-You will need to create a PAT with enough permissions to be able to update the repository labels.
+You will need to [create a PAT](https://github.com/settings/tokens) with enough permissions to be able to update the repository labels.
 
 <br />
 <p align="right"><a href="https://wolfsoftware.com/"><img src="https://img.shields.io/badge/Created%20by%20Wolf%20on%20behalf%20of%20Wolf%20Software-blue?style=for-the-badge" /></a></p>
