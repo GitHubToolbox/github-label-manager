@@ -34,6 +34,7 @@ jobs:
       - uses: ActionsToolbox/get-language-versions-action@9a98a01e87286f073bbee069547aeeea4ea30265 # v0.1.2
         id: get-language-versions
         with:
+          min-version: 3.9
           language: "python"
 
   # Always included to handle check-jobs.sh
