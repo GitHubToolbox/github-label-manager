@@ -40,5 +40,42 @@
 
 ## Overview
 
+This script is designed to allow you to manage the labels on your GitHub repositories.
+
+Keeping all your labels consistent makes it easier to work across multiple repositories (and organisations)
+
+We currently manage over 100 repositories across more than 15 organisations so it is important to reduce
+any friction when moving between project.
+
+## Command Line Usage
+
+```shell
+usage: github-label-manager [-h] [-d] [-v] [-j | -y] [-t TOKEN] -f FILENAME [-u USER | -o ORG | -r REPO]
+
+Setup labels on git repository.
+
+flags:
+  -h, --help            show this help message and exit.
+  -d, --dry-run         Perform a dry run (default: False)
+  -v, --validate        Validate local labels (default: False)
+
+mutually exclusive flags:
+  -j, --json            JSON formatted config file (default: True)
+  -y, --yaml            YAML formatted config file (default: False)
+
+selective:
+  -t TOKEN, --token TOKEN
+                        GitHub token (needed for everything except -v/--validate) (default: None)
+
+required:
+  -f FILENAME, --filename FILENAME
+                        File containing labels (default: None)
+
+mutually exclusive:
+  -u USER, --user USER  Specify username (default: None)
+  -o ORG, --org ORG     Specify organization (default: None)
+  -r REPO, --repo REPO  Specify repository (default: None)
+```
+
 <br />
 <p align="right"><a href="https://wolfsoftware.com/"><img src="https://img.shields.io/badge/Created%20by%20Wolf%20on%20behalf%20of%20Wolf%20Software-blue?style=for-the-badge" /></a></p>

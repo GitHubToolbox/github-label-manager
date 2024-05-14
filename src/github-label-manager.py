@@ -129,15 +129,13 @@ def plural(number: int) -> Literal[''] | Literal['s']:
 
 def add_new_labels(client: Github, repo: str, labels_to_add: list, dry_run: bool) -> None:
     """
-    _summary_.
-
-    _extended_summary_
+    Add new labels to the given repository.
 
     Arguments:
-        client (_type_): _description_
-        repo (_type_): _description_
-        labels_to_add (_type_): _description_
-        dry_run (_type_): _description_
+        client (Github): The authenticated github connection.
+        repo (str): The name of the repository.
+        labels_to_add (list): The list of labels to add.
+        dry_run (bool): A flag to handle dry-runs.
     """
     print(f"Adding {len(labels_to_add)} new label{plural(len(labels_to_add))}")
     for label in labels_to_add:
@@ -155,15 +153,13 @@ def add_new_labels(client: Github, repo: str, labels_to_add: list, dry_run: bool
 
 def delete_obsolete_labels(client: Github, repo: str, labels_to_delete: list, dry_run: bool) -> None:
     """
-    _summary_.
-
-    _extended_summary_
+    Delete obsolete labels from the given repository.
 
     Arguments:
-        client (_type_): _description_
-        repo (_type_): _description_
-        labels_to_delete (_type_): _description_
-        dry_run (_type_): _description_
+        client (Github): The authenticated github connection.
+        repo (str): The name of the repository.
+        labels_to_add (list): The list of labels to delete.
+        dry_run (bool): A flag to handle dry-runs.
     """
     print(f"Deleting {len(labels_to_delete)} label{plural(len(labels_to_delete))}")
     for label in labels_to_delete:
@@ -181,15 +177,13 @@ def delete_obsolete_labels(client: Github, repo: str, labels_to_delete: list, dr
 
 def update_labels(client: Github, repo: str, labels_to_update: list, dry_run: bool) -> None:
     """
-    _summary_.
-
-    _extended_summary_
+    Update existing labels on the given repository.
 
     Arguments:
-        client (_type_): _description_
-        repo (_type_): _description_
-        labels_to_update (_type_): _description_
-        dry_run (_type_): _description_
+        client (Github): The authenticated github connection.
+        repo (str): The name of the repository.
+        labels_to_add (list): The list of labels to update.
+        dry_run (bool): A flag to handle dry-runs.
     """
     print(f"Updating {len(labels_to_update)} label{plural(len(labels_to_update))}")
     for label in labels_to_update:
@@ -207,16 +201,14 @@ def update_labels(client: Github, repo: str, labels_to_update: list, dry_run: bo
 
 def process_repo_labels(local_labels: list, repo_labels: list) -> tuple[list, list, list]:
     """
-    _summary_.
-
-    _extended_summary_
+    Compare the local labels and the repository labels to work out what to add, delete and update.
 
     Arguments:
-        local_labels (_type_): _description_
-        repo_labels (_type_): _description_
+        local_labels (list): The local labels loaded from the config file.
+        repo_labels (list): The labels extracted from the repository.
 
     Returns:
-        _type_: _description_
+        tuple[list, list, list]: The list of labels to add, delete and update.
     """
     labels_to_update: list = []
     update_keys = set()
@@ -238,16 +230,14 @@ def process_repo_labels(local_labels: list, repo_labels: list) -> tuple[list, li
 
 def get_repo_labels(client: Github, repo: str) -> list[dict[str, Any]] | list:
     """
-    _summary_.
-
-    _extended_summary_
+    Extract the list of labels currently used by a given repository.
 
     Arguments:
-        client (_type_): _description_
-        repo (_type_): _description_
+        client (Github): The authenticated github connection.
+        repo (str): The name of the repository.
 
     Returns:
-        _type_: _description_
+        list[dict[str, Any]] | list: The labels extracted from the repository.
     """
     try:
         labels: Any = client.get_repo(repo).get_labels()
@@ -262,15 +252,16 @@ def get_repo_labels(client: Github, repo: str) -> list[dict[str, Any]] | list:
 
 def process_labels(client: Github, repo: str, local_labels: list, dry_run: bool) -> None:
     """
-    _summary_.
+    Process the labels for a given repository.
 
-    _extended_summary_
+    This includes extracting the labels from the repository, calculating what to add, delete and
+    update and performing the additions, deletions and updates.
 
     Arguments:
-        client (_type_): _description_
-        repo (_type_): _description_
-        local_labels (_type_): _description_
-        dry_run (_type_): _description_
+        client (Github): The authenticated github connection.
+        repo (str): The name of the repository.
+        labels_to_add (list): The list of labels to update.
+        dry_run (bool): A flag to handle dry-runs.
     """
     labels_to_add: list = []
     labels_to_delete: list = []
@@ -289,14 +280,12 @@ def process_labels(client: Github, repo: str, local_labels: list, dry_run: bool)
         error(f"Error processing labels for {repo}: {err}")
 
 
-def validate_local_labels(labels) -> None:
+def validate_local_labels(labels: list) -> None:
     """
-    _summary_.
-
-    _extended_summary_
+    Validate the labels in the config file.
 
     Arguments:
-        labels (_type_): _description_
+        labels (list): The local labels loaded from the config file.
     """
     info(f"Validating {len(labels)} Labels")
     for label in labels:
@@ -383,7 +372,7 @@ def load_labels_from_file(filename: str, args: argparse.Namespace) -> list:
     sets 'description' to an empty string if it's missing or None, and assigns a random color if 'color' is missing.
 
     Arguments:
-        filename (str): Path to the JSON file containing label data.
+        filename (str): Path to the file containing label data.
 
     Returns:
         list: A list of label dictionaries with normalized properties.
@@ -409,17 +398,15 @@ def load_labels_from_file(filename: str, args: argparse.Namespace) -> list:
     return valid_labels
 
 
-def setup_client(token) -> Github:
+def setup_client(token: str) -> Github:
     """
-    _summary_.
-
-    _extended_summary_
+    Create a new Github client using the token for authentication.
 
     Arguments:
-        token (_type_): _description_
+        token (str): The Github PAT to use for authentication.
 
     Returns:
-        Github: _description_
+        Github: The authenticated github connection.
     """
     try:
         client = Github(token)
@@ -431,7 +418,7 @@ def setup_client(token) -> Github:
 
 def update_selected_repos(args: argparse.Namespace, local_labels: list) -> None:
     """
-    _summary_.
+    Calculate which repos to update based on the command line arguments supplied.
 
     Arguments:
         args (argparse.Namespace): The command line arguments.
@@ -464,12 +451,10 @@ def update_selected_repos(args: argparse.Namespace, local_labels: list) -> None:
 
 def setup_arg_parser() -> argparse.ArgumentParser:
     """
-    _summary_.
-
-    _extended_summary_
+    Configure the argument parser.
 
     Returns:
-        argparse.ArgumentParser: _description_
+        argparse.ArgumentParser: The arguments parser.
     """
     parser = argparse.ArgumentParser(prog="github-label-manager",
                                      description="Setup labels on git repository.",
@@ -508,12 +493,9 @@ def setup_arg_parser() -> argparse.ArgumentParser:
 
 def process_arguments() -> None:
     """
-    _summary_.
+    Process the command line arguments.
 
-    _extended_summary_
-
-    Returns:
-        argparse.Namespace: _description_
+    Setup the arguments parser, parser the arguments, validate the input and then action the requested changed.
     """
     parser: argparse.ArgumentParser = setup_arg_parser()
     args: argparse.Namespace = parser.parse_args()
@@ -540,9 +522,13 @@ def process_arguments() -> None:
 
 def main() -> None:
     """
-    _summary_.
+    Execute the main routine of the script.
 
-    _extended_summary_
+    This function serves as the entry point of the script. It is responsible
+    for invoking the `process_arguments` function, which handles the processing
+    of command-line arguments. The `main` function does not take any parameters
+    and does not return any value. It ensures that the script's functionality
+    is triggered correctly when the script is executed.
     """
     process_arguments()
 
