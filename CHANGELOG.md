@@ -7,7 +7,9 @@ This changelog was automatically generated using [Caretaker](https://github.com/
 
 ### [Unreleased](https://github.com/GitHubToolbox/github-label-manager/commits/master)
 
-- Lots of clean up [`[head]`](https://github.com/GitHubToolbox/github-label-manager/commit/)
+- Fix requirements for all python versions [`[head]`](https://github.com/GitHubToolbox/github-label-manager/commit/)
+
+- Lots of clean up [`[8a3cc5f]`](https://github.com/GitHubToolbox/github-label-manager/commit/8a3cc5faec168a1e12778bf1b2e76f61db889188)
 
 - Lots of clean up [`[7b9a98d]`](https://github.com/GitHubToolbox/github-label-manager/commit/7b9a98db3e4f9fcf0398f5ef31c5585740902012)
 
