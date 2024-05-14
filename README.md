@@ -81,5 +81,36 @@ mutually exclusive:
   -r REPO, --repo REPO  Specify repository (default: None)
 ```
 
+## Examples
+
+### Validate the labels config file
+```shell
+$ github-label-manager -f config/labels.json -v
+```
+
+### Update a specific repository
+
+```shell
+$ github-label-manager -f config/labels.json -t <PAT> -r <Repository>
+```
+> Repository is in the format of organization/repo_full_name E.g. GitHubToolbox/github-label-manager
+
+### Update all repositories for a given organization
+```shell
+$ github-label-manager -f config/labels.json -t <PAT> -o <Organisation>
+```
+
+### Update all repositories for a given user
+```shell
+$ github-label-manager -f config/labels.json -t <PAT> -u <username>
+```
+
+### Dry Runs
+You can add a -d/--dry-run to any of the 3 examples above and it will show you the changes it **would** make.
+
+## Personal Access Tokens (PAT)
+
+You will need to create a PAT with enough permissions to be able to update the repository labels.
+
 <br />
 <p align="right"><a href="https://wolfsoftware.com/"><img src="https://img.shields.io/badge/Created%20by%20Wolf%20on%20behalf%20of%20Wolf%20Software-blue?style=for-the-badge" /></a></p>
