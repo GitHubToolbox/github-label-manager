@@ -9,5 +9,7 @@ This changelog was automatically generated using [Caretaker](https://github.com/
 
 - Lots of clean up [`[head]`](https://github.com/GitHubToolbox/github-label-manager/commit/)
 
+- Lots of clean up [`[1721194]`](https://github.com/GitHubToolbox/github-label-manager/commit/1721194cf4985db85ae6c40443a45e5daeb7ed7b)
+
 - First push [`[8c98e0c]`](https://github.com/GitHubToolbox/github-label-manager/commit/8c98e0c4138d81b12b913d8ae9430f8da46cecc9)
 
