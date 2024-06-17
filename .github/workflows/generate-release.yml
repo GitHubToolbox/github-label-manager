@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Checkout the repository
         # Using a specific SHA for the checkout action ensures the action version is stable and secure.
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - name: Set the release version
@@ -44,7 +44,7 @@ jobs:
       - set-release-version
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - name: Generate changelog
