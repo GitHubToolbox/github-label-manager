@@ -1,4 +1,4 @@
 colorama==0.4.6
 PyGithub==2.3.0
-PyYAML==6.0.1
+PyYAML==6.0.2
 yaspin==3.0.2
